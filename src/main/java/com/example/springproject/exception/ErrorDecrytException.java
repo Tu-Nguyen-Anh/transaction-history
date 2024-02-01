@@ -4,6 +4,6 @@ import com.example.springproject.exception.base.BadRequestException;
 
 public class ErrorDecrytException extends BadRequestException {
   public ErrorDecrytException(){
-    setCode("com.example.springproject.exception.ErrorDecrytException");
+    setCode("com.example.springproject.exception.ErrorDecryptException");
   }
 }

@@ -37,23 +37,19 @@ public class TransactionHistoryServiceImpl extends BaseServiceImpl<TransactionHi
   /**
    * Receive encrypted request from Controller and decrypt then save to database
    *
-   * @param requestEncode
-   * @return
+   * @param request TransactionHistoryRequest
+   * @return TransactionHistoryResponse
    */
   @Transactional
   @Override
-  public TransactionHistoryResponse transactionHistory(TransactionRequestEncode requestEncode) {
-    TransactionHistoryRequest request = this.decryptRequest(requestEncode);
-
-    String encryptedAccountReceive = this.encryptAccount(request.getAccountReceive());
-    String encryptedAccountSend = this.encryptAccount(request.getAccountSend());
+  public TransactionHistoryResponse transactionHistory(TransactionHistoryRequest request) {
 
     String transactionId = generateTransactionId();
     String currentDateTime = getCurrentDateTimeString();
 
     TransactionHistory receive = new TransactionHistory(
           transactionId,
-          encryptedAccountReceive,
+          request.getAccountReceive(),
           BigDecimal.ZERO,
           request.getAmount(),
           currentDateTime,
@@ -63,7 +59,7 @@ public class TransactionHistoryServiceImpl extends BaseServiceImpl<TransactionHi
 
     TransactionHistory send = new TransactionHistory(
           transactionId,
-          encryptedAccountSend,
+          request.getAccountSend(),
           request.getAmount().negate(),
           BigDecimal.ZERO,
           currentDateTime,
@@ -73,10 +69,10 @@ public class TransactionHistoryServiceImpl extends BaseServiceImpl<TransactionHi
 
     return new TransactionHistoryResponse(
           send.getTransactionID(),
-          aesEncryptor.convertToEntityAttribute(encryptedAccountReceive),
+          receive.getAccount(),
           receive.getInDebt(),
           receive.getHave(),
-          aesEncryptor.convertToEntityAttribute(encryptedAccountSend),
+          send.getAccount(),
           send.getInDebt(),
           send.getHave(),
           currentDateTime
@@ -86,8 +82,8 @@ public class TransactionHistoryServiceImpl extends BaseServiceImpl<TransactionHi
   /**
    * Encrypt request
    *
-   * @param request
-   * @return
+   * @param request TransactionHistoryRequest
+   * @return TransactionRequestEncode
    */
   @Override
   public TransactionRequestEncode encrypt(TransactionHistoryRequest request) {
@@ -101,26 +97,16 @@ public class TransactionHistoryServiceImpl extends BaseServiceImpl<TransactionHi
   /**
    * Decrypt Request from Controller
    *
-   * @param requestEncode
-   * @return
+   * @param requestEncode requestEncode
+   * @return TransactionHistoryRequest
    */
-
-  private TransactionHistoryRequest decryptRequest(TransactionRequestEncode requestEncode) {
+  @Override
+  public TransactionHistoryRequest decryptRequest(TransactionRequestEncode requestEncode) {
     return new TransactionHistoryRequest(
           rsaEncryptorUtils.decrypt(requestEncode.getAccountReceive()),
           rsaEncryptorUtils.decrypt(requestEncode.getAccountSend()),
           rsaEncryptorUtils.convertStringToBigDecimal(rsaEncryptorUtils.decrypt(requestEncode.getAmount()))
     );
-  }
-
-  /**
-   * Method encrypt AccountId
-   *
-   * @param accountId
-   * @return
-   */
-  private String encryptAccount(String accountId) {
-    return aesEncryptor.convertToDatabaseColumn(accountId);
   }
 
   /**
